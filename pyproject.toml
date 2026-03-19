@@ -1,6 +1,6 @@
 [project]
 name = "zerotel"
-version = "0.1.0"
+version = "0.2.0"
 description = "Zero-config observability SDK for Python services — auto-instruments FastAPI with traces, metrics, and logs via OpenTelemetry"
 readme = "README.md"
 license = { text = "MIT" }
@@ -67,6 +67,11 @@ dev = [
     "mypy>=1.5.0",
 ]
 
+[project.scripts]
+# Registers the `zerotel` command when the package is pip-installed.
+# Usage: zerotel --help | zerotel info | zerotel quickstart | zerotel config
+zerotel = "zerotel._cli:main"
+
 [project.urls]
 Homepage = "https://github.com/Kamalesh-Kavin/zerotel"
 Repository = "https://github.com/Kamalesh-Kavin/zerotel"
@@ -103,3 +108,8 @@ addopts = "--cov=src/zerotel --cov-report=term-missing -q"
 [tool.coverage.run]
 source = ["src/zerotel"]
 omit = ["tests/*"]
+
+[dependency-groups]
+dev = [
+    "uvicorn>=0.42.0",
+]
