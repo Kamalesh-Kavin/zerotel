@@ -1,0 +1,120 @@
+# docker/docker-compose.yml
+#
+# Full observability stack for local Zerotel development.
+#
+# Services:
+#   otel-collector  — receives OTLP (traces + metrics), fans out to Tempo /
+#                     Prometheus / Loki
+#   tempo           — distributed trace storage (Grafana Tempo)
+#   prometheus      — metrics storage
+#   loki            — log aggregation
+#   grafana         — unified UI for all three signals
+#
+# Usage:
+#   cd docker/
+#   docker compose up -d
+#
+# Then:
+#   - Grafana:    http://localhost:3000  (admin / admin)
+#   - Prometheus: http://localhost:9090
+#   - Tempo:      http://localhost:3200
+#
+# Your service should export to:
+#   OTLP gRPC  → http://localhost:4317
+#   OTLP HTTP  → http://localhost:4318
+
+services:
+
+  # --------------------------------------------------------------------------
+  # OpenTelemetry Collector
+  # Receives traces (OTLP gRPC / HTTP), fans out to Tempo.
+  # Receives metrics (OTLP), scrapes itself and forwards to Prometheus.
+  # --------------------------------------------------------------------------
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.96.0
+    command: ["--config=/etc/otel-collector.yml"]
+    volumes:
+      - ./otel-collector.yml:/etc/otel-collector.yml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC  — your service sends traces/metrics here
+      - "4318:4318"   # OTLP HTTP
+      - "8888:8888"   # Collector self-metrics (scraped by Prometheus)
+    depends_on:
+      - tempo
+    networks:
+      - zerotel
+
+  # --------------------------------------------------------------------------
+  # Grafana Tempo — distributed trace backend
+  # --------------------------------------------------------------------------
+  tempo:
+    image: grafana/tempo:2.4.1
+    command: ["-config.file=/etc/tempo.yml"]
+    volumes:
+      - ./tempo.yml:/etc/tempo.yml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "3200:3200"   # Tempo HTTP API (Grafana datasource)
+    networks:
+      - zerotel
+
+  # --------------------------------------------------------------------------
+  # Prometheus — metrics storage
+  # --------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-remote-write-receiver"  # accepts OTLP metrics from collector
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"   # Prometheus UI and API
+    networks:
+      - zerotel
+
+  # --------------------------------------------------------------------------
+  # Grafana Loki — log aggregation
+  # --------------------------------------------------------------------------
+  loki:
+    image: grafana/loki:2.9.7
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports:
+      - "3100:3100"   # Loki HTTP API
+    networks:
+      - zerotel
+
+  # --------------------------------------------------------------------------
+  # Grafana — unified observability UI
+  # Pre-provisioned with Tempo, Prometheus, and Loki datasources plus the
+  # Zerotel dashboard.
+  # --------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.4.1
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"   # Grafana UI
+    depends_on:
+      - tempo
+      - prometheus
+      - loki
+    networks:
+      - zerotel
+
+networks:
+  zerotel:
+    name: zerotel_network
+
+volumes:
+  tempo_data:
+  prometheus_data:
+  grafana_data:

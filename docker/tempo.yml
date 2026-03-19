@@ -1,0 +1,38 @@
+# docker/tempo.yml
+#
+# Minimal Grafana Tempo configuration for local development.
+#
+# Tempo stores traces in a local filesystem backend.
+# The HTTP API is exposed on port 3200 for Grafana to query.
+# OTLP gRPC ingestion is on port 4317 (handled by the collector).
+
+server:
+  http_listen_port: 3200
+
+# Distributor: accept OTLP traces from the collector
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+
+# Ingester: flush to storage every 5 minutes or when full
+ingester:
+  max_block_duration: 5m
+
+# Storage: local filesystem — good for dev, use object storage in production
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/traces
+    wal:
+      path: /var/tempo/wal
+
+# Compactor: merges small blocks to keep query performance high
+compactor:
+  compaction:
+    block_retention: 1h   # keep traces for 1 hour in dev

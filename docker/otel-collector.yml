@@ -1,0 +1,61 @@
+# docker/otel-collector.yml
+#
+# OpenTelemetry Collector configuration.
+#
+# Pipeline:
+#   receivers:   otlp (gRPC + HTTP)
+#   processors:  batch (buffer spans before export to reduce network calls)
+#   exporters:   otlp/tempo (traces), prometheusremotewrite (metrics)
+#
+# Docs: https://opentelemetry.io/docs/collector/
+
+receivers:
+  # Accept traces and metrics in OTLP format via both gRPC and HTTP.
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+
+processors:
+  # Batch spans together before exporting to reduce per-span network overhead.
+  # Default: send when 512 spans accumulated OR every 200ms, whichever first.
+  batch:
+    send_batch_size: 512
+    timeout: 200ms
+
+  # Memory limiter: hard-limit collector memory at 400 MiB.
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 400
+
+exporters:
+  # Send traces to Grafana Tempo via OTLP gRPC.
+  otlp/tempo:
+    endpoint: "tempo:4317"
+    tls:
+      insecure: true
+
+  # Push metrics to Prometheus via remote-write.
+  prometheusremotewrite:
+    endpoint: "http://prometheus:9090/api/v1/write"
+    tls:
+      insecure: true
+
+  # Debug exporter: logs received spans/metrics to the collector's stdout.
+  # Useful during development — comment out in production.
+  debug:
+    verbosity: normal
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo, debug]
+
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheusremotewrite]

@@ -1,0 +1,32 @@
+# docker/prometheus.yml
+#
+# Prometheus scrape configuration for local development.
+#
+# Scrape targets:
+#   - The OTel Collector's self-metrics endpoint (port 8888)
+#   - Your local FastAPI service (port 8000) — adjust if needed
+#
+# Remote-write receiver is enabled via the --web.enable-remote-write-receiver
+# flag in docker-compose.yml, so the collector can push metrics here.
+
+global:
+  scrape_interval: 15s       # How often to pull metrics from each target
+  evaluation_interval: 15s   # How often to evaluate alerting rules
+
+scrape_configs:
+  # --------------------------------------------------------------------------
+  # OTel Collector self-metrics
+  # The collector exposes its own health/performance metrics on port 8888.
+  # --------------------------------------------------------------------------
+  - job_name: "otel-collector"
+    static_configs:
+      - targets: ["otel-collector:8888"]
+
+  # --------------------------------------------------------------------------
+  # Example service — scrape your FastAPI app directly
+  # Uncomment and adjust the target when running the example app.
+  # --------------------------------------------------------------------------
+  # - job_name: "my-api"
+  #   static_configs:
+  #     - targets: ["host.docker.internal:8000"]
+  #   metrics_path: "/metrics"

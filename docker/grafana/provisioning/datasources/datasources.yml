@@ -1,0 +1,73 @@
+# docker/grafana/provisioning/datasources/datasources.yml
+#
+# Grafana datasource provisioning.
+#
+# These datasources are automatically configured when Grafana starts —
+# no manual setup required.  You can query all three signals immediately
+# after running: docker compose up -d
+#
+# Docs: https://grafana.com/docs/grafana/latest/administration/provisioning/
+
+apiVersion: 1
+
+datasources:
+  # --------------------------------------------------------------------------
+  # Grafana Tempo — distributed traces
+  # Query traces by trace ID or via TraceQL.
+  # --------------------------------------------------------------------------
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    uid: tempo
+    isDefault: false
+    jsonData:
+      # Link log lines to traces by matching trace_id fields.
+      # Requires logs to include a trace_id field (which Zerotel does).
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: "-1m"
+        spanEndTimeShift: "1m"
+        filterByTraceID: true
+        filterBySpanID: false
+      # Link traces to Prometheus metrics for the same time window.
+      tracesToMetrics:
+        datasourceUid: prometheus
+      # Enable service map derived from trace data.
+      serviceMap:
+        datasourceUid: prometheus
+      # Enable search via Tempo's native query API.
+      search:
+        hide: false
+
+  # --------------------------------------------------------------------------
+  # Prometheus — metrics
+  # --------------------------------------------------------------------------
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    uid: prometheus
+    isDefault: true
+    jsonData:
+      # Exemplars: link Prometheus metrics to Tempo traces when trace_id is
+      # present in the metric (requires exemplar support in the SDK).
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo
+
+  # --------------------------------------------------------------------------
+  # Grafana Loki — logs
+  # --------------------------------------------------------------------------
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    uid: loki
+    jsonData:
+      # Derive trace ID links from Zerotel's trace_id log field.
+      derivedFields:
+        - name: trace_id
+          matcherRegex: '"trace_id":"(\w+)"'
+          url: '$${__value.raw}'
+          datasourceUid: tempo

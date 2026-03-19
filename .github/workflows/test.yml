@@ -1,0 +1,65 @@
+# .github/workflows/test.yml
+#
+# Test workflow — runs on every pull request.
+#
+# Matrix strategy: tests run against Python 3.10, 3.11, and 3.12 simultaneously
+# so we catch any version-specific regressions before merging.
+#
+# Coverage is reported via pytest-cov; the summary is printed to the job log.
+# No external coverage service (e.g. Codecov) is wired up here — add that
+# later if needed by appending a "Upload coverage" step.
+
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: pytest (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      # Don't cancel the other matrix legs if one fails — see all results at once.
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Python ────────────────────────────────────────────────────────────
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # ── uv ────────────────────────────────────────────────────────────────
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      # ── Dependencies ──────────────────────────────────────────────────────
+      # Install all optional extras so the full test suite can run.
+      - name: Install dependencies
+        run: uv sync --extra dev --extra sqlalchemy --extra flask
+
+      # ── Tests ─────────────────────────────────────────────────────────────
+      # -v           → verbose output (one line per test)
+      # --tb=short   → compact tracebacks on failure
+      # --cov        → collect coverage for the src/zerotel package
+      # --cov-report → print a per-file coverage table to stdout
+      - name: Run pytest
+        run: |
+          uv run pytest \
+            -v \
+            --tb=short \
+            --cov=src/zerotel \
+            --cov-report=term-missing \
+            tests/

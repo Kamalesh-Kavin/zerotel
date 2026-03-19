@@ -1,0 +1,60 @@
+# .github/workflows/lint.yml
+#
+# Lint workflow — runs on every pull request.
+#
+# Checks:
+#   1. ruff check  — catches style and logic issues (replaces flake8, isort, etc.)
+#   2. ruff format --check  — ensures consistent formatting (replaces black)
+#   3. mypy --strict  — full static type-checking
+#
+# We use `uv` as the package manager throughout (mirrors local dev setup).
+
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main  # also lint direct pushes to main (e.g. after a merge)
+
+jobs:
+  lint:
+    name: Ruff + Mypy
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Python ────────────────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # ── uv ────────────────────────────────────────────────────────────────
+      # astral-sh/setup-uv installs uv and caches the uv cache dir between runs,
+      # making subsequent installs significantly faster.
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      # ── Dependencies ──────────────────────────────────────────────────────
+      # Install dev extras so mypy can see all type stubs.
+      - name: Install dependencies
+        run: uv sync --extra dev --extra sqlalchemy --extra flask
+
+      # ── Ruff — lint ───────────────────────────────────────────────────────
+      - name: Ruff check (lint)
+        run: uv run ruff check src/ tests/
+
+      # ── Ruff — format ─────────────────────────────────────────────────────
+      - name: Ruff format (check only, no writes)
+        run: uv run ruff format --check src/ tests/
+
+      # ── Mypy ──────────────────────────────────────────────────────────────
+      # --strict enables all optional checks: --disallow-untyped-defs, etc.
+      - name: Mypy strict
+        run: uv run mypy --strict src/zerotel/

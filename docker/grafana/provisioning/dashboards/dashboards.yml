@@ -1,0 +1,15 @@
+# docker/grafana/provisioning/dashboards/dashboards.yml
+#
+# Grafana dashboard provisioning.
+# Points Grafana at the dashboards directory so JSON files are loaded
+# automatically on startup.
+
+apiVersion: 1
+
+providers:
+  - name: zerotel
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
