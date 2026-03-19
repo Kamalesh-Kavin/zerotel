@@ -128,7 +128,7 @@ def instrument_sqlalchemy(engine: Any) -> None:
     span_key = "_zerotel_span"
     start_key = "_zerotel_start"
 
-    @event.listens_for(sync_engine, "before_cursor_execute")
+    @event.listens_for(sync_engine, "before_cursor_execute")  # type: ignore
     def _before_execute(
         conn: Any,
         cursor: Any,
@@ -152,7 +152,7 @@ def instrument_sqlalchemy(engine: Any) -> None:
         conn.info[span_key] = span
         conn.info[start_key] = time.perf_counter()
 
-    @event.listens_for(sync_engine, "after_cursor_execute")
+    @event.listens_for(sync_engine, "after_cursor_execute")  # type: ignore
     def _after_execute(
         conn: Any,
         cursor: Any,
@@ -175,7 +175,7 @@ def instrument_sqlalchemy(engine: Any) -> None:
         span.set_status(StatusCode.OK)
         span.end()
 
-    @event.listens_for(sync_engine, "handle_error")
+    @event.listens_for(sync_engine, "handle_error")  # type: ignore
     def _on_error(exception_context: Any) -> None:
         """Mark the active DB span as an error when a query fails."""
         conn = getattr(exception_context, "connection", None)

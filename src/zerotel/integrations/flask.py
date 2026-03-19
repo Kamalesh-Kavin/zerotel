@@ -102,7 +102,7 @@ def instrument_flask(app: Any, config: ZerotelConfig | None = None) -> None:
     # ------------------------------------------------------------------
     # before_request — start span, populate context
     # ------------------------------------------------------------------
-    @app.before_request  # type: ignore[misc]
+    @app.before_request  # type: ignore
     def _before() -> None:
         path = request.path
 
@@ -145,7 +145,7 @@ def instrument_flask(app: Any, config: ZerotelConfig | None = None) -> None:
     # ------------------------------------------------------------------
     # after_request — record metrics, close span
     # ------------------------------------------------------------------
-    @app.after_request  # type: ignore[misc]
+    @app.after_request  # type: ignore
     def _after(response: Response) -> Response:
         if getattr(g, "_zerotel_skip", True):
             return response
@@ -176,12 +176,12 @@ def instrument_flask(app: Any, config: ZerotelConfig | None = None) -> None:
     # ------------------------------------------------------------------
     # teardown_request — handle uncaught exceptions
     # ------------------------------------------------------------------
-    @app.teardown_request  # type: ignore[misc]
+    @app.teardown_request  # type: ignore
     def _teardown(exc: BaseException | None) -> None:
         if getattr(g, "_zerotel_skip", True) or exc is None:
             return
 
-        span: otel_trace.Span = getattr(g, "_zerotel_span", None)
+        span: otel_trace.Span | None = getattr(g, "_zerotel_span", None)
         if span is None:
             return
 
@@ -196,7 +196,7 @@ def instrument_flask(app: Any, config: ZerotelConfig | None = None) -> None:
         try:
             from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
-            @app.route(cfg.metrics_endpoint)  # type: ignore[misc]
+            @app.route(cfg.metrics_endpoint)  # type: ignore
             def _metrics_view() -> Response:
                 """Prometheus metrics scrape endpoint."""
                 return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)

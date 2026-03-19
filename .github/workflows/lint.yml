@@ -53,6 +53,8 @@ jobs:
         run: uv run ruff format --check src/ tests/
 
       # ── Mypy ──────────────────────────────────────────────────────────────
-      # --strict enables all optional checks: --disallow-untyped-defs, etc.
+      # strict = true is set in pyproject.toml [tool.mypy], along with
+      # warn_unused_ignores = false (overrides strict's default) so that
+      # type: ignore comments work consistently across mypy versions.
       - name: Mypy strict
-        run: uv run mypy --strict src/zerotel/
+        run: uv run mypy src/zerotel/

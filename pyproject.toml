@@ -90,6 +90,10 @@ ignore = ["B008"]  # FastAPI Depends() in default args is intentional
 python_version = "3.10"
 strict = true
 ignore_missing_imports = true
+# Don't fail on "unused type: ignore" comments — our type: ignore annotations
+# are necessary in some mypy versions but not others (Flask/SQLAlchemy untyped
+# decorators behave differently across mypy 1.5–1.14).
+warn_unused_ignores = false
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -153,7 +153,7 @@ class Zerotel:
         # ------------------------------------------------------------------
         # FastAPI / Starlette apps expose ``add_middleware``.
         if hasattr(app, "add_middleware"):
-            app.add_middleware(ZerotelMiddleware, config=config, tracer=tracer)  # type: ignore[union-attr]
+            app.add_middleware(ZerotelMiddleware, config=config, tracer=tracer)  # type: ignore
 
         # ------------------------------------------------------------------
         # 5. Prometheus /metrics endpoint
@@ -230,7 +230,7 @@ class Zerotel:
         # Mount it at the configured path.  FastAPI/Starlette support mounting
         # sub-applications via app.mount() or by appending to app.routes.
         if hasattr(app, "mount"):
-            app.mount(config.metrics_endpoint, metrics_app)  # type: ignore[union-attr]
+            app.mount(config.metrics_endpoint, metrics_app)  # type: ignore
         elif hasattr(app, "routes"):
             # Fallback: directly append a Mount to the route list.
-            app.routes.append(Mount(config.metrics_endpoint, app=metrics_app))  # type: ignore[union-attr]
+            app.routes.append(Mount(config.metrics_endpoint, app=metrics_app))  # type: ignore
