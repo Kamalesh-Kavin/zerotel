@@ -40,10 +40,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       # ── uv ────────────────────────────────────────────────────────────────
+      # uv.lock is not committed (library convention), so no lockfile cache.
       - name: Install uv
         uses: astral-sh/setup-uv@v3
-        with:
-          enable-cache: true
 
       # ── Dependencies ──────────────────────────────────────────────────────
       # Install all optional extras so the full test suite can run.

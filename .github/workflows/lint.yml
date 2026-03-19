@@ -34,12 +34,10 @@ jobs:
           python-version: "3.11"
 
       # ── uv ────────────────────────────────────────────────────────────────
-      # astral-sh/setup-uv installs uv and caches the uv cache dir between runs,
-      # making subsequent installs significantly faster.
+      # We don't commit uv.lock (library, not app), so caching is skipped.
+      # uv itself is still fast enough without the lockfile cache.
       - name: Install uv
         uses: astral-sh/setup-uv@v3
-        with:
-          enable-cache: true
 
       # ── Dependencies ──────────────────────────────────────────────────────
       # Install dev extras so mypy can see all type stubs.
